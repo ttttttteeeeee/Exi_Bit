@@ -1,0 +1,4 @@
+"""Input handling."""
+from exi_bit.input.input_manager import InputManager
+
+__all__ = ["InputManager"]
