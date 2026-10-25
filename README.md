@@ -375,9 +375,7 @@ Then open a Pull Request on GitHub.
 
 # 📜 License
 
-Exi_Bit is currently under development.
-
-The project's final open-source license will be defined before the first stable release.
+The repository currently includes the Apache License 2.0 in `LICENSE`. Keep the license text and required notices when distributing the project.
 
 ---
 
