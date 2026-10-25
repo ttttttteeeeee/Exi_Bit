@@ -68,41 +68,38 @@ Exi_Bit follows a modular architecture:
 
 ---
 
-# 📁 Project Structure
+# 📁 Current Project Structure
 
 ```text
 Exi_Bit/
-│
 ├── exi_bit/
 │   ├── engine/
-│   │   ├── core.py
-│   │   ├── game_loop.py
-│   │   └── config.py
-│   │
-│   ├── rendering/
-│   │   └── renderer.py
-│   │
+│   │   ├── __init__.py
+│   │   ├── config.py       # Runtime/window settings
+│   │   └── core.py         # Fixed-timestep game loop and lifecycle
 │   ├── input/
 │   │   └── input_manager.py
-│   │
 │   ├── physics/
-│   │   └── physics.py
-│   │
-│   ├── world/
-│   │   └── world.py
-│   │
-│   └── assets/
-│
+│   │   └── physics.py      # Body, gravity and rectangle collision
+│   ├── rendering/
+│   │   └── renderer.py     # Drawing and horizontal camera
+│   └── world/
+│       └── world.py        # World/scene interface
 ├── examples/
-│   └── basic_game.py
-│
+│   ├── platformer.py       # First playable Python example
+│   └── web_platformer/     # Standalone HTML/JavaScript demo
 ├── tests/
-│
+│   └── test_physics.py
+├── docs/
+│   └── PROJECT_AUDIT.md
 ├── run.py
 ├── requirements.txt
 ├── pyproject.toml
+├── LICENSE
 └── README.md
 ```
+
+This is the current implementation, not the full long-term vision. Some planned systems—such as asset loading, audio, animation, scene transitions, and editor tooling—do not exist yet.
 
 ---
 
@@ -114,7 +111,7 @@ Exi_Bit/
 | Initial Rendering | Pygame |
 | Physics | Custom Python system |
 | Input | Pygame |
-| Testing | Pytest |
+| Testing | unittest (pytest-compatible tests) |
 | Package Management | pip |
 | Build System | Python / pyproject.toml |
 | Version Control | Git + GitHub |
@@ -171,18 +168,16 @@ python run.py
 
 # 🎮 Creating Your First Game
 
-Example:
+Run the first playable Python example from the repository root:
 
-```python
-from exi_bit.engine.core import ExiBit
-
-
-engine = ExiBit()
-
-engine.run()
+```bash
+python -m pip install -r requirements.txt
+python run.py
 ```
 
-More examples will be added as the engine develops.
+Controls: **A/D or Left/Right** to move, **Space/W/Up** to jump, and **Esc** to quit.
+
+The HTML/JavaScript prototype remains separate at [`examples/web_platformer/index.html`](examples/web_platformer/index.html).
 
 ---
 
@@ -398,14 +393,18 @@ https://github.com/ttttttteeeeee/Exi_Bit
 
 # Current Implementation Status
 
-**Blunt status:** Exi_Bit is still a scaffold, not yet a runnable Python game engine. The Python modules shown in the architecture and roadmap are planned work, not implemented files.
+**Current status:** Exi_Bit now has a minimal Python/Pygame runtime, a fixed-timestep update loop, keyboard input, rectangle physics, a camera-aware renderer, a world interface, a playable Python platformer example, and starter physics tests. This is an early foundation—not a production-ready engine.
 
-## Play the browser demo
+## Run tests
 
-Open [`examples/web_platformer/index.html`](examples/web_platformer/index.html) in a modern browser. It uses HTML, CSS, and JavaScript and needs no installation. Controls are documented in [the demo README](examples/web_platformer/README.md).
+```bash
+python -m unittest discover -v
+```
 
-**Important:** the browser demo does not use the Python/Pygame engine. It is kept as a standalone example while the Python engine is developed.
+## Browser demo
+
+Open [`examples/web_platformer/index.html`](examples/web_platformer/index.html) in a modern browser. It is a separate HTML/JavaScript demo and does not call the Python engine.
 
 ## File-by-file project review
 
-See [`docs/PROJECT_AUDIT.md`](docs/PROJECT_AUDIT.md) for the blunt assessment of existing files, what to keep/remove/defer, recommended Python package structure, and the exact responsibility of each planned module.
+See [`docs/PROJECT_AUDIT.md`](docs/PROJECT_AUDIT.md) for existing-file recommendations and the responsibilities of the engine modules.
