@@ -48,12 +48,10 @@ class PlatformerWorld(World):
 
         # Keep the player inside the world bounds.
         if self.player.rect.left < 0:
-            self.player.rect.left = 0
-            self.player._x = float(self.player.rect.x)
+            self.player.set_position(0, self.player.rect.y)
             self.player.velocity_x = 0.0
         if self.player.rect.right > self.WORLD_WIDTH:
-            self.player.rect.right = self.WORLD_WIDTH
-            self.player._x = float(self.player.rect.x)
+            self.player.set_position(self.WORLD_WIDTH - self.player.rect.width, self.player.rect.y)
             self.player.velocity_x = 0.0
 
         if self.player.rect.colliderect(self.goal):
@@ -61,9 +59,7 @@ class PlatformerWorld(World):
 
         # A fall below the level respawns the player at the start.
         if self.player.rect.top > 700:
-            self.player.rect.topleft = (80, 380)
-            self.player._x = float(self.player.rect.x)
-            self.player._y = float(self.player.rect.y)
+            self.player.set_position(80, 380)
             self.player.velocity_x = 0.0
             self.player.velocity_y = 0.0
             self.player.on_ground = False
