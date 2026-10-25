@@ -1,0 +1,286 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mini Platformer Engine</title>
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:#101827; color:#eaf2ff; font:15px/1.45 system-ui,Segoe UI,Arial,sans-serif; }
+  .wrap { max-width:1050px; margin:0 auto; padding:22px 16px 30px; }
+  header { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; margin-bottom:14px; }
+  h1 { margin:0 0 4px; font-size:clamp(1.45rem,3vw,2rem); letter-spacing:-.03em; }
+  .sub { margin:0; color:#aabbd3; }
+  .hud { display:flex; gap:10px; flex-wrap:wrap; }
+  .pill { padding:8px 12px; border:1px solid #30425d; border-radius:999px; background:#172338; font-weight:650; }
+  .gamebox { position:relative; border:1px solid #30425d; border-radius:16px; overflow:hidden; box-shadow:0 18px 60px #0005; background:#8bd6f5; }
+  canvas { display:block; width:100%; height:auto; image-rendering:pixelated; }
+  .overlay { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; padding:20px; background:#0c1426b8; }
+  .panel { max-width:440px; text-align:center; background:#172338; border:1px solid #506684; border-radius:18px; padding:24px; box-shadow:0 12px 40px #0006; }
+  .panel h2 { margin:0 0 8px; font-size:1.7rem; }
+  .panel p { color:#c2d0e4; margin:0 0 18px; }
+  button { cursor:pointer; border:0; border-radius:10px; padding:11px 17px; background:#a7f36b; color:#17220e; font:700 15px system-ui, sans-serif; }
+  button:hover { filter:brightness(1.06); transform:translateY(-1px); }
+  .below { display:grid; grid-template-columns:1.2fr 1fr; gap:14px; margin-top:14px; }
+  .card { border:1px solid #30425d; border-radius:14px; background:#172338; padding:14px 16px; }
+  .card h3 { margin:0 0 8px; font-size:1rem; }
+  .keys { display:flex; flex-wrap:wrap; gap:8px; color:#c4d3e8; }
+  kbd { display:inline-block; min-width:28px; text-align:center; padding:3px 7px; border:1px solid #50627b; border-bottom-width:3px; border-radius:6px; background:#24344d; color:#fff; font:600 12px ui-monospace,monospace; }
+  .note { color:#aabbd3; font-size:13px; margin:9px 0 0; }
+  @media(max-width:700px){ .below{grid-template-columns:1fr;} .wrap{padding:14px 10px 24px;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Mini Platformer Engine</h1>
+      <p class="sub">A tiny, reusable 2D engine — built with Canvas + JavaScript.</p>
+    </div>
+    <div class="hud">
+      <div class="pill">◆ Gems: <span id="gems">0 / 8</span></div>
+      <div class="pill">♥ Lives: <span id="lives">3</span></div>
+      <div class="pill">● <span id="status">Ready</span></div>
+    </div>
+  </header>
+  <div class="gamebox">
+    <canvas id="game" width="960" height="540" aria-label="Playable platformer"></canvas>
+    <div class="overlay" id="overlay">
+      <div class="panel">
+        <h2 id="overlayTitle">Ready to run?</h2>
+        <p id="overlayText">Collect the gems, jump over hazards, and reach the flag at the end of the level.</p>
+        <button id="startBtn">Start game</button>
+      </div>
+    </div>
+  </div>
+  <div class="below">
+    <section class="card">
+      <h3>Controls</h3>
+      <div class="keys"><span><kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd> <kbd>D</kbd> Move</span><span><kbd>Space</kbd> / <kbd>↑</kbd> Jump</span><span><kbd>R</kbd> Restart</span><span><kbd>Esc</kbd> Pause</span></div>
+      <p class="note">Tip: you can hold jump a little longer to get a slightly higher jump. Land on platforms from above.</p>
+    </section>
+    <section class="card">
+      <h3>Engine systems included</h3>
+      <div class="keys"><span>✓ Game loop</span><span>✓ Input manager</span><span>✓ Gravity + collision</span><span>✓ Camera follow</span><span>✓ Collectibles + hazards</span><span>✓ Win / lose / restart</span></div>
+      <p class="note">No external libraries or network connection needed.</p>
+    </section>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const canvas = document.getElementById("game");
+  const ctx = canvas.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const W = canvas.width, H = canvas.height;
+  const WORLD_W = 3200, WORLD_H = 900;
+  const GRAVITY = 1850;
+  const keys = new Set();
+
+  const level = {
+    platforms: [
+      {x:0,y:470,w:540,h:100}, {x:630,y:430,w:210,h:30}, {x:920,y:370,w:180,h:30},
+      {x:1170,y:445,w:260,h:30}, {x:1510,y:390,w:180,h:30}, {x:1760,y:330,w:210,h:30},
+      {x:2040,y:430,w:240,h:30}, {x:2350,y:370,w:190,h:30}, {x:2600,y:310,w:210,h:30},
+      {x:2880,y:450,w:320,h:120}, {x:460,y:350,w:90,h:24}, {x:1320,y:300,w:100,h:24},
+      {x:2180,y:285,w:100,h:24}, {x:2750,y:210,w:100,h:24}
+    ],
+    gems: [
+      {x:300,y:420,r:12}, {x:500,y:310,r:12}, {x:710,y:390,r:12}, {x:980,y:330,r:12},
+      {x:1260,y:405,r:12}, {x:1550,y:350,r:12}, {x:1820,y:290,r:12}, {x:2230,y:245,r:12},
+      {x:2410,y:330,r:12}, {x:2670,y:270,r:12}, {x:2780,y:170,r:12}
+    ],
+    hazards: [
+      {x:730,y:410,w:48,h:20}, {x:1240,y:425,w:50,h:20}, {x:2110,y:410,w:55,h:20},
+      {x:2940,y:425,w:42,h:25}
+    ],
+    goal: {x:3090,y:365,w:30,h:85}
+  };
+
+  let player, camera, gems, lives, gameState, lastTime = 0, elapsed = 0;
+  function reset() {
+    player = {x:70,y:350,w:30,h:42,vx:0,vy:0,onGround:false,face:1,invuln:0};
+    camera = {x:0,y:0};
+    gems = level.gems.map(g => ({...g,taken:false,phase:Math.random()*6}));
+    lives = 3; elapsed = 0; gameState = "playing";
+    updateHud();
+    $("overlay").hidden = true;
+    $("status").textContent = "Playing";
+  }
+  function updateHud() {
+    $("gems").textContent = `${gems.filter(g=>g.taken).length} / ${gems.length}`;
+    $("lives").textContent = lives;
+  }
+  function rects(a,b) {
+    return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+  }
+  function hitHazard() {
+    return level.hazards.some(h => rects(player,h));
+  }
+  function respawn() {
+    lives--;
+    updateHud();
+    if (lives <= 0) return finish(false, "Out of lives!", "Press R or click below to try the level again.");
+    player.x = Math.max(50, Math.floor(camera.x/320)*320 + 35);
+    player.y = 250; player.vx = 0; player.vy = 0; player.invuln = 1.4;
+    if (player.x > WORLD_W-200) player.x = 2700;
+  }
+  function finish(won, title, text) {
+    gameState = won ? "won" : "lost";
+    $("status").textContent = won ? "Level clear!" : "Game over";
+    $("overlayTitle").textContent = title;
+    $("overlayText").textContent = text;
+    $("startBtn").textContent = "Play again";
+    $("overlay").hidden = false;
+  }
+  function pause() {
+    if (gameState === "playing") {
+      gameState = "paused";
+      $("status").textContent = "Paused";
+      $("overlayTitle").textContent = "Paused";
+      $("overlayText").textContent = "Take a breather. Your progress is saved.";
+      $("startBtn").textContent = "Resume";
+      $("overlay").hidden = false;
+    } else if (gameState === "paused") {
+      gameState = "playing"; $("status").textContent = "Playing"; $("overlay").hidden = true;
+    }
+  }
+
+  function update(dt) {
+    if (gameState !== "playing") return;
+    elapsed += dt;
+    const left = keys.has("ArrowLeft") || keys.has("KeyA");
+    const right = keys.has("ArrowRight") || keys.has("KeyD");
+    const jump = keys.has("Space") || keys.has("ArrowUp") || keys.has("KeyW");
+    const speed = 310, accel = player.onGround ? 2400 : 1500;
+    const target = (right?1:0) - (left?1:0);
+    if (target) { player.vx += target*accel*dt; player.vx = Math.max(-speed,Math.min(speed,player.vx)); player.face = target; }
+    else { const drag = player.onGround ? 2100 : 500; player.vx -= Math.sign(player.vx)*Math.min(Math.abs(player.vx),drag*dt); }
+    if (jump && player.onGround) { player.vy = -690; player.onGround = false; }
+    player.vy += GRAVITY*dt;
+    player.vy = Math.min(player.vy, 1000);
+
+    // Horizontal movement + solid collision
+    player.x += player.vx*dt;
+    for (const p of level.platforms) if (rects(player,p)) {
+      if (player.vx > 0) player.x = p.x-player.w;
+      else if (player.vx < 0) player.x = p.x+p.w;
+      player.vx = 0;
+    }
+    player.x = Math.max(0,Math.min(WORLD_W-player.w,player.x));
+
+    // Vertical movement + solid collision
+    player.y += player.vy*dt;
+    player.onGround = false;
+    for (const p of level.platforms) if (rects(player,p)) {
+      if (player.vy > 0) { player.y = p.y-player.h; player.onGround = true; }
+      else if (player.vy < 0) player.y = p.y+p.h;
+      player.vy = 0;
+    }
+    if (player.y > WORLD_H) respawn();
+    if (hitHazard() && player.invuln <= 0) respawn();
+    player.invuln = Math.max(0,player.invuln-dt);
+
+    for (const g of gems) {
+      if (!g.taken && rects(player,{x:g.x-g.r,y:g.y-g.r,w:g.r*2,h:g.r*2})) {
+        g.taken = true; updateHud();
+      }
+    }
+    if (rects(player,level.goal)) {
+      const collected = gems.filter(g=>g.taken).length;
+      finish(true,"Level complete!",`You reached the flag and collected ${collected} of ${gems.length} gems. Press R to play again.`);
+    }
+
+    const targetX = player.x + player.w/2 - W*0.42;
+    camera.x += (Math.max(0,Math.min(WORLD_W-W,targetX))-camera.x)*Math.min(1,dt*6);
+    camera.y = 0;
+  }
+
+  function roundedRect(x,y,w,h,r,fill) {
+    ctx.fillStyle=fill; ctx.beginPath(); ctx.roundRect(x,y,w,h,r); ctx.fill();
+  }
+  function draw() {
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0,0,0,H);
+    grad.addColorStop(0,"#77c9f4"); grad.addColorStop(1,"#d3f3ff");
+    ctx.fillStyle=grad; ctx.fillRect(0,0,W,H);
+    ctx.save(); ctx.translate(-camera.x,-camera.y);
+
+    // Distant hills/parallax
+    for(let i=0;i<9;i++){
+      const x=i*430 - camera.x*0.22;
+      ctx.fillStyle=i%2?"#8ac7b2":"#75bba8";
+      ctx.beginPath(); ctx.ellipse(x+120,470,250,140,0,Math.PI,Math.PI*2); ctx.fill();
+    }
+    // Platforms
+    for(const p of level.platforms){
+      roundedRect(p.x,p.y,p.w,p.h,7,"#7b543c");
+      roundedRect(p.x,p.y,p.w,10,5,"#5dc56b");
+      ctx.fillStyle="#986b49";
+      for(let x=p.x+12;x<p.x+p.w-8;x+=34){ctx.fillRect(x,p.y+20,16,4);ctx.fillRect(x+8,p.y+44,12,4);}
+    }
+    // Spikes/hazards
+    for(const h of level.hazards){
+      ctx.fillStyle="#ef5365";
+      const n=Math.max(2,Math.floor(h.w/12));
+      for(let i=0;i<n;i++){
+        const sx=h.x+i*h.w/n;
+        ctx.beginPath();ctx.moveTo(sx,h.y+h.h);ctx.lineTo(sx+h.w/n/2,h.y);ctx.lineTo(sx+h.w/n,h.y+h.h);ctx.closePath();ctx.fill();
+      }
+    }
+    // Gems
+    for(const g of gems) if(!g.taken){
+      const bob=Math.sin(elapsed*4+g.phase)*4;
+      ctx.save();ctx.translate(g.x,g.y+bob);ctx.rotate(Math.PI/4);
+      ctx.fillStyle="#fff0a3";ctx.fillRect(-8,-8,16,16);
+      ctx.fillStyle="#ffc83d";ctx.fillRect(-5,-5,10,10);
+      ctx.restore();
+      ctx.fillStyle="#fff8c9";ctx.beginPath();ctx.arc(g.x-3,g.y-4+bob,2,0,Math.PI*2);ctx.fill();
+    }
+    // Goal flag
+    ctx.fillStyle="#eff6ff";ctx.fillRect(level.goal.x+4,level.goal.y,5,level.goal.h);
+    ctx.fillStyle="#fb5c70";ctx.beginPath();ctx.moveTo(level.goal.x+9,level.goal.y+4);ctx.lineTo(level.goal.x+52,level.goal.y+18);ctx.lineTo(level.goal.x+9,level.goal.y+32);ctx.closePath();ctx.fill();
+    // Player: simple expressive character
+    if (!(player.invuln>0 && Math.floor(elapsed*16)%2===0)) {
+      roundedRect(player.x,player.y+8,player.w,player.h-8,8,"#4b55d9");
+      roundedRect(player.x+3,player.y,player.w-6,19,7,"#f6b98b");
+      ctx.fillStyle="#202849";
+      const eyeX=player.face>0?player.x+20:player.x+8;
+      ctx.beginPath();ctx.arc(eyeX,player.y+9,2.5,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle="#303ba8";ctx.fillRect(player.x+5,player.y+player.h-4,8,7);ctx.fillRect(player.x+18,player.y+player.h-4,8,7);
+    }
+    ctx.restore();
+
+    // In-game progress line
+    ctx.fillStyle="#10203955";ctx.fillRect(18,18,180,8);
+    ctx.fillStyle="#a7f36b";ctx.fillRect(18,18,180*(player.x/WORLD_W),8);
+    ctx.fillStyle="#102039";ctx.font="bold 12px system-ui";ctx.fillText("LEVEL PROGRESS",18,39);
+  }
+
+  function loop(now) {
+    const dt=Math.min((now-lastTime)/1000||0,0.033); lastTime=now;
+    update(dt); draw(); requestAnimationFrame(loop);
+  }
+  window.addEventListener("keydown",e=>{
+    const controlled=["ArrowLeft","ArrowRight","ArrowUp","Space","ArrowDown"];
+    if(controlled.includes(e.code)) e.preventDefault();
+    keys.add(e.code);
+    if(e.code==="Escape") pause();
+    if(e.code==="KeyR"){ reset(); $("overlay").hidden=true; $("status").textContent="Playing"; }
+  });
+  window.addEventListener("keyup",e=>keys.delete(e.code));
+  window.addEventListener("blur",()=>keys.clear());
+  $("startBtn").addEventListener("click",()=>{
+    if(gameState==="paused"){pause();return;}
+    reset();
+  });
+  // Initial state for the title screen
+  player={x:70,y:350,w:30,h:42,vx:0,vy:0,onGround:false,face:1,invuln:0};
+  camera={x:0,y:0}; gems=level.gems.map(g=>({...g,taken:false,phase:0}));
+  lives=3; gameState="title"; updateHud(); $("status").textContent="Ready";
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

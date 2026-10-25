@@ -126,7 +126,7 @@ Exi_Bit/
 ## 1. Clone the repository
 
 ```bash
-git clone https://github.com/Joelkathi/Exi_Bit.git
+git clone https://github.com/ttttttteeeeee/Exi_Bit.git
 cd Exi_Bit
 ```
 
@@ -375,9 +375,7 @@ Then open a Pull Request on GitHub.
 
 # 📜 License
 
-Exi_Bit is currently under development.
-
-The project's final open-source license will be defined before the first stable release.
+The repository currently includes the Apache License 2.0 in `LICENSE`. Keep the license text and required notices when distributing the project.
 
 ---
 
@@ -385,12 +383,29 @@ The project's final open-source license will be defined before the first stable 
 
 **Exi_Bit**
 
-An open-source game engine project by **Joel Kathi**.
+An open-source game engine project by **tèE_J**.
 
 GitHub:
 
-https://github.com/Joelkathi/Exi_Bit
+https://github.com/ttttttteeeeee/Exi_Bit
 
 ---
 
 > **Exi_Bit — Build. Create. Play.**
+
+
+---
+
+# Current Implementation Status
+
+**Blunt status:** Exi_Bit is still a scaffold, not yet a runnable Python game engine. The Python modules shown in the architecture and roadmap are planned work, not implemented files.
+
+## Play the browser demo
+
+Open [`examples/web_platformer/index.html`](examples/web_platformer/index.html) in a modern browser. It uses HTML, CSS, and JavaScript and needs no installation. Controls are documented in [the demo README](examples/web_platformer/README.md).
+
+**Important:** the browser demo does not use the Python/Pygame engine. It is kept as a standalone example while the Python engine is developed.
+
+## File-by-file project review
+
+See [`docs/PROJECT_AUDIT.md`](docs/PROJECT_AUDIT.md) for the blunt assessment of existing files, what to keep/remove/defer, recommended Python package structure, and the exact responsibility of each planned module.
