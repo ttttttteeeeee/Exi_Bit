@@ -60,6 +60,22 @@ class PhysicsSystem:
         body.rect.y = round(body._y)
         body.on_ground = False
         for solid in solids:
+            overlaps_horizontally = (
+                body.rect.right > solid.left and body.rect.left < solid.right
+            )
+            # Treat exact edge contact as grounded too. Without this, sub-pixel
+            # rounding can make a resting body alternate between grounded and
+            # airborne on consecutive frames.
+            if (
+                body.velocity_y >= 0
+                and overlaps_horizontally
+                and body.rect.bottom == solid.top
+            ):
+                body._y = float(body.rect.y)
+                body.velocity_y = 0.0
+                body.on_ground = True
+                break
+
             if body.rect.colliderect(solid):
                 if body.velocity_y > 0:
                     body.rect.bottom = solid.top
