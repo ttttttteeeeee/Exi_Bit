@@ -1,0 +1,17 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exi-bit"
+version = "0.1.0"
+description = "An experimental modular 2D game engine built with Pygame"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { file = "LICENSE" }
+dependencies = [
+  "pygame>=2.5.0,<3.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["exi_bit*"]
