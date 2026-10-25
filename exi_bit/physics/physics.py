@@ -21,6 +21,12 @@ class Body:
         self._x = float(self.rect.x)
         self._y = float(self.rect.y)
 
+    def set_position(self, x: float, y: float) -> None:
+        """Teleport the body and keep its floating-point position in sync."""
+        self._x = float(x)
+        self._y = float(y)
+        self.rect.topleft = (round(self._x), round(self._y))
+
 
 class PhysicsSystem:
     """Applies gravity and resolves axis-aligned platform collisions."""
